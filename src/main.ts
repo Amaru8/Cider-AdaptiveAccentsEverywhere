@@ -46,10 +46,8 @@ const { plugin, setupConfig, customElementName, goToPage, useCPlugin } = defineP
                     fetchId = event.item.attributes.playParams.id;
                 } else {
                     console.log('[Adaptive Accents Everywhere] No identifiable album or song ID.', event.item);
-                    return;
                 }
 
-                console.log('fetchId', fetchId);
                 if (!fetchId) return;
 
                 const albumMediaItem = await getAlbumMediaItem(fetchId);
@@ -59,13 +57,19 @@ const { plugin, setupConfig, customElementName, goToPage, useCPlugin } = defineP
                     return;
                 }
 
-                // @ts-ignore
-                const keyColorValue = '#' + albumMediaItem.attributes.artwork[cfg.value.keyColor];
-                // @ts-ignore
-                const musicKeyColorValue = '#' + albumMediaItem.attributes.artwork[cfg.value.musicKeyColor];
+                if (cfg.value.keyColor !== 'cider')
+                    document.body.style.setProperty(
+                        '--keyColor',
+                        // @ts-ignore
+                        '#' + albumMediaItem.attributes.artwork[cfg.value.keyColor]
+                    );
 
-                document.body.style.setProperty('--keyColor', keyColorValue);
-                document.documentElement.style.setProperty('--musicKeyColor', musicKeyColorValue);
+                if (cfg.value.musicKeyColor !== 'cider')
+                    document.documentElement.style.setProperty(
+                        '--musicKeyColor',
+                        // @ts-ignore
+                        '#' + albumMediaItem.attributes.artwork[cfg.value.musicKeyColor]
+                    );
             } catch (error) {
                 console.error('[Adaptive Accents Everywhere] Error processing now playing item:', error);
             }

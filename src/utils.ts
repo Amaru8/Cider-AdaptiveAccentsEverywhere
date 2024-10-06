@@ -37,11 +37,8 @@ export async function getAlbumMediaItem(id: string): Promise<MusicKit.MediaItem>
         if (!response.data?.data?.[0]) {
             throw new Error('[Adaptive Accents Everywhere] Album not found');
         }
-
-        const albumData = response.data.data[0];
-        console.log('albumData', albumData);
-
-        const mediaItem: MusicKit.MediaItem = albumData;
+        
+        const mediaItem: MusicKit.MediaItem = response.data.data[0];
 
         // Ensure the href is set correctly
         if (!mediaItem.href) {

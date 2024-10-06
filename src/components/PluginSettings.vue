@@ -18,6 +18,7 @@ const cfg = useConfig();
                     <option value="textColor2">Text Color 2</option>
                     <option value="textColor3">Text Color 3</option>
                     <option value="textColor4">Text Color 4</option>
+                    <option value="cider">Cider Default</option>
                 </select>
             </label>
         </div>
@@ -30,6 +31,7 @@ const cfg = useConfig();
                     <option value="textColor2">Text Color 2</option>
                     <option value="textColor3">Text Color 3</option>
                     <option value="textColor4">Text Color 4</option>
+                    <option value="cider">Cider Default</option>
                 </select>
             </label>
         </div>
