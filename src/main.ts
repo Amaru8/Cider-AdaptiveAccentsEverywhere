@@ -33,27 +33,41 @@ const { plugin, setupConfig, customElementName, goToPage, useCPlugin } = defineP
         mk.addEventListener('nowPlayingItemDidChange', async (event: any) => {
             if (cfg.value.frozen === true) return;
 
-            let fetchId: string | null = null;
-
             if (!event.item) return;
+
+            let fetchId: string | null = null;
+            let relationshipMode = false;
 
             try {
                 if (event.item.attributes?.playParams?.catalogId) {
+                    // console.debug(
+                    //     '[Adaptive Accents Everywhere] Resolving using catalog method:',
+                    //     event.item.attributes.playParams.catalogId
+                    // );
                     fetchId = event.item.attributes.playParams.catalogId;
                 } else if (event.item.relationships?.albums?.data?.[0]?.id) {
+                    // console.debug(
+                    //     '[Adaptive Accents Everywhere] Resolving using relationship method:',
+                    //     event.item.relationships.albums.data[0].id
+                    // );
                     fetchId = event.item.relationships.albums.data[0].id;
+                    relationshipMode = true;
                 } else if (event.item.attributes?.playParams?.id) {
+                    // console.debug(
+                    //     '[Adaptive Accents Everywhere] Resolving using playParams method:',
+                    //     event.item.attributes.playParams.id
+                    // );
                     fetchId = event.item.attributes.playParams.id;
                 } else {
-                    console.log('[Adaptive Accents Everywhere] No identifiable album or song ID.', event.item);
+                    console.warn('[Adaptive Accents Everywhere] No identifiable album or song ID.', event.item);
                 }
 
                 if (!fetchId) return;
 
-                const albumMediaItem = await getAlbumMediaItem(fetchId);
+                const albumMediaItem = await getAlbumMediaItem(fetchId, relationshipMode);
 
                 if (!albumMediaItem.attributes || !albumMediaItem.attributes.artwork) {
-                    console.log('[Adaptive Accents Everywhere] Album media item does not have expected attributes.');
+                    console.warn('[Adaptive Accents Everywhere] Album media item does not have expected attributes.');
                     return;
                 }
 
