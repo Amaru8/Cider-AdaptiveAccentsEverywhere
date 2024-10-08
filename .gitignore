@@ -23,5 +23,3 @@ publish
 *.njsproj
 *.sln
 *.sw?
-
-package-lock.json
