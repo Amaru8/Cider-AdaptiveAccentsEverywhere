@@ -1,12 +1,13 @@
 import { defineCustomElement } from 'vue';
 import type { App } from 'vue';
 import { createPinia } from 'pinia';
-import { definePluginContext } from '@ciderapp/pluginkit';
+import { definePluginContext, useCider } from '@ciderapp/pluginkit';
 import PluginSettings from './components/PluginSettings.vue';
 import PluginConfig from './plugin.config';
 import { getAlbumMediaItem, waitForMusicKit } from './utils';
 
 const pinia = createPinia();
+const CiderApp = useCider();
 
 function configureApp(app: App) {
     app.use(pinia);
@@ -103,8 +104,10 @@ const { plugin, setupConfig, customElementName, goToPage, useCPlugin } = defineP
                         minContrast: number = 4.5
                     ): string {
                         let contrastRatio = getContrastRatio(color, backgroundColor);
+                        let attempts = 0;
+                        const maxAttempts = 50; // Prevent infinite loop
 
-                        while (contrastRatio < minContrast) {
+                        while (contrastRatio < minContrast && attempts < maxAttempts) {
                             const luminance = getLuminance(color);
                             if (luminance > 0.5) {
                                 color = (parseInt(color, 16) - 0x111111).toString(16).padStart(6, '0');
@@ -112,24 +115,61 @@ const { plugin, setupConfig, customElementName, goToPage, useCPlugin } = defineP
                                 color = (parseInt(color, 16) + 0x111111).toString(16).padStart(6, '0');
                             }
                             contrastRatio = getContrastRatio(color, backgroundColor);
+                            attempts++;
                         }
 
+                        console.debug(`[Adaptive Accents Everywhere] Color adjustment attempts: ${attempts}`);
                         return color;
                     }
 
-                    if (cfg.value.keyColor !== 'cider') {
-                        let keyColor: string = (albumMediaItem.attributes.artwork as any)[cfg.value.keyColor];
-                        keyColor = adjustColorForContrast(keyColor, '000000');
-                        document.body.style.setProperty('--keyColor', '#' + keyColor);
+                    function detectBackgroundColor(artworkAttribute: any): string {
+                        let appearance = CiderApp.config.cfg.value.visual.appearance;
+                        if (appearance === 'auto')
+                            appearance = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
+                        switch (appearance) {
+                            case 'dark':
+                                if (CiderApp.config.cfg.value.visual.sweetener.useImmersiveBG === true)
+                                    return artworkAttribute.bgColor;
+                                return '000000';
+
+                            case 'light':
+                                return 'ffffff';
+
+                            default:
+                                break;
+                        }
+
+                        return '000000';
                     }
 
-                    if (cfg.value.musicKeyColor !== 'cider') {
-                        let musicKeyColor: string = (albumMediaItem.attributes.artwork as any)[cfg.value.musicKeyColor];
-                        musicKeyColor = adjustColorForContrast(musicKeyColor, '000000');
-                        document.documentElement.style.setProperty('--musicKeyColor', '#' + musicKeyColor);
+                    try {
+                        if (cfg.value.keyColor !== 'cider') {
+                            let keyColor: string = (albumMediaItem.attributes.artwork as any)[cfg.value.keyColor];
+                            keyColor = adjustColorForContrast(
+                                keyColor,
+                                detectBackgroundColor(albumMediaItem.attributes.artwork)
+                            );
+                            console.debug('[Adaptive Accents Everywhere] Setting key color:', keyColor);
+                            document.body.style.setProperty('--keyColor', '#' + keyColor);
+                        }
+
+                        if (cfg.value.musicKeyColor !== 'cider') {
+                            let musicKeyColor: string = (albumMediaItem.attributes.artwork as any)[
+                                cfg.value.musicKeyColor
+                            ];
+                            musicKeyColor = adjustColorForContrast(
+                                musicKeyColor,
+                                detectBackgroundColor(albumMediaItem.attributes.artwork)
+                            );
+                            console.debug('[Adaptive Accents Everywhere] Setting music key color:', musicKeyColor);
+                            document.documentElement.style.setProperty('--musicKeyColor', '#' + musicKeyColor);
+                        }
+                    } catch (colorError) {
+                        console.warn('[Adaptive Accents Everywhere] Error processing colors:', colorError);
                     }
                 } catch (error) {
-                    console.error('[Adaptive Accents Everywhere] Error processing now playing item:', error);
+                    console.warn('[Adaptive Accents Everywhere] Error processing now playing item:', error);
                 }
             });
         });
