@@ -74,19 +74,60 @@ const { plugin, setupConfig, customElementName, goToPage, useCPlugin } = defineP
                         return;
                     }
 
-                    if (cfg.value.keyColor !== 'cider')
-                        document.body.style.setProperty(
-                            '--keyColor',
-                            // @ts-ignore
-                            '#' + albumMediaItem.attributes.artwork[cfg.value.keyColor]
-                        );
+                    function getLuminance(hex: string): number {
+                        const rgb = parseInt(hex, 16);
+                        const r = (rgb >> 16) & 0xff;
+                        const g = (rgb >> 8) & 0xff;
+                        const b = (rgb >> 0) & 0xff;
 
-                    if (cfg.value.musicKeyColor !== 'cider')
-                        document.documentElement.style.setProperty(
-                            '--musicKeyColor',
-                            // @ts-ignore
-                            '#' + albumMediaItem.attributes.artwork[cfg.value.musicKeyColor]
-                        );
+                        const rsRGB = r / 255;
+                        const gsRGB = g / 255;
+                        const bsRGB = b / 255;
+
+                        const R = rsRGB <= 0.03928 ? rsRGB / 12.92 : Math.pow((rsRGB + 0.055) / 1.055, 2.4);
+                        const G = gsRGB <= 0.03928 ? gsRGB / 12.92 : Math.pow((gsRGB + 0.055) / 1.055, 2.4);
+                        const B = bsRGB <= 0.03928 ? bsRGB / 12.92 : Math.pow((bsRGB + 0.055) / 1.055, 2.4);
+
+                        return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+                    }
+
+                    function getContrastRatio(color1: string, color2: string): number {
+                        const l1 = getLuminance(color1);
+                        const l2 = getLuminance(color2);
+                        return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+                    }
+
+                    function adjustColorForContrast(
+                        color: string,
+                        backgroundColor: string,
+                        minContrast: number = 4.5
+                    ): string {
+                        let contrastRatio = getContrastRatio(color, backgroundColor);
+
+                        while (contrastRatio < minContrast) {
+                            const luminance = getLuminance(color);
+                            if (luminance > 0.5) {
+                                color = (parseInt(color, 16) - 0x111111).toString(16).padStart(6, '0');
+                            } else {
+                                color = (parseInt(color, 16) + 0x111111).toString(16).padStart(6, '0');
+                            }
+                            contrastRatio = getContrastRatio(color, backgroundColor);
+                        }
+
+                        return color;
+                    }
+
+                    if (cfg.value.keyColor !== 'cider') {
+                        let keyColor: string = (albumMediaItem.attributes.artwork as any)[cfg.value.keyColor];
+                        keyColor = adjustColorForContrast(keyColor, '000000');
+                        document.body.style.setProperty('--keyColor', '#' + keyColor);
+                    }
+
+                    if (cfg.value.musicKeyColor !== 'cider') {
+                        let musicKeyColor: string = (albumMediaItem.attributes.artwork as any)[cfg.value.musicKeyColor];
+                        musicKeyColor = adjustColorForContrast(musicKeyColor, '000000');
+                        document.documentElement.style.setProperty('--musicKeyColor', '#' + musicKeyColor);
+                    }
                 } catch (error) {
                     console.error('[Adaptive Accents Everywhere] Error processing now playing item:', error);
                 }
