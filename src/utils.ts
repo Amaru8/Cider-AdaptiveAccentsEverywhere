@@ -191,5 +191,5 @@ function detectBackgroundColor(artworkAttribute: any): string {
 }
 
 function resolveCoverUrl(url: string, width: number, height: number): string {
-    return url.replace('{w}', width.toString()).replace('{h}', height.toString()).replace('{f}', 'webp');
+    return url.replace('{w}', Math.floor(width).toString()).replace('{h}', Math.floor(height).toString()).replace('{f}', 'webp');
 }
