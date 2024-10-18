@@ -22,9 +22,9 @@ const cfg = useConfig();
             <label>
                 Color Scheme Matching Rule of Internal Algorithm:
                 <select class="c-select" v-model="cfg.internal_SchemeMatching">
-                    <option value="inverted">Inverted</option>
-                    <option value="matching">Matching</option>
                     <option value="generic">Generic</option>
+                    <option value="matching">Matching</option>
+                    <option value="inverted">Inverted</option>
                 </select>
             </label>
         </div>

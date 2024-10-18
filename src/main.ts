@@ -102,7 +102,7 @@ export const cfg = setupConfig({
     algorithm: 'musicKit' as 'musicKit' | 'internal',
     mkAlgo_keyColor: 'textColor1',
     mkAlgo_musicKeyColor: 'textColor4',
-    internal_SchemeMatching: 'inverted' as 'inverted' | 'matching' | 'generic',
+    internal_SchemeMatching: 'generic' as 'generic' | 'matching' | 'inverted',
 });
 
 export function useConfig() {
