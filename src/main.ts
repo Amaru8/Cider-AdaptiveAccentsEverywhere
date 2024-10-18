@@ -75,14 +75,14 @@ const { plugin, setupConfig, customElementName, goToPage, useCPlugin } = defineP
                     }
 
                     try {
-                        if (cfg.value.keyColor !== 'cider') {
-                            let keyColor: string = await getColor('keyColor', albumMediaItem);
+                        if (cfg.value.mkAlgo_keyColor !== 'cider' || cfg.value.algorithm === 'internal') {
+                            let keyColor: string = await getColor('mkAlgo_keyColor', albumMediaItem);
                             console.debug('[Adaptive Accents Everywhere] Setting key color:', keyColor);
                             document.body.style.setProperty('--keyColor', '#' + keyColor);
                         }
 
-                        if (cfg.value.musicKeyColor !== 'cider') {
-                            let musicKeyColor: string = await getColor('musicKeyColor', albumMediaItem);
+                        if (cfg.value.mkAlgo_musicKeyColor !== 'cider' || cfg.value.algorithm === 'internal') {
+                            let musicKeyColor: string = await getColor('mkAlgo_musicKeyColor', albumMediaItem);
                             console.debug('[Adaptive Accents Everywhere] Setting music key color:', musicKeyColor);
                             document.documentElement.style.setProperty('--musicKeyColor', '#' + musicKeyColor);
                         }
@@ -99,10 +99,10 @@ const { plugin, setupConfig, customElementName, goToPage, useCPlugin } = defineP
 
 export const cfg = setupConfig({
     frozen: false,
-    keyColor: 'textColor1',
-    musicKeyColor: 'textColor4',
-    useInternalAlgorithm: false,
-    internalAlgoFlipScheme: false,
+    algorithm: 'musicKit' as 'musicKit' | 'internal',
+    mkAlgo_keyColor: 'textColor1',
+    mkAlgo_musicKeyColor: 'textColor4',
+    internal_SchemeMatching: 'inverted' as 'inverted' | 'matching' | 'generic',
 });
 
 export function useConfig() {

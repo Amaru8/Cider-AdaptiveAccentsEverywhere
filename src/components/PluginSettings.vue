@@ -7,18 +7,31 @@ const cfg = useConfig();
 <template>
     <div class="q-px-lg plugin-base">
         <div>
-            <label>
-                <input type="checkbox" v-model="cfg.useInternalAlgorithm" /> Use Internal Algorithm instead of colors
-                from Apple
-            </label>
-        </div>
-        <div>
             <label> <input type="checkbox" v-model="cfg.frozen" /> Freeze Colors </label>
         </div>
         <div v-if="!cfg.frozen">
             <label>
+                Algorithm:
+                <select class="c-select" v-model="cfg.algorithm">
+                    <option value="musicKit">MusicKit</option>
+                    <option value="internal">Internal</option>
+                </select>
+            </label>
+        </div>
+        <div v-if="!cfg.frozen && cfg.algorithm === 'internal'">
+            <label>
+                Color Scheme Matching Rule of Internal Algorithm:
+                <select class="c-select" v-model="cfg.internal_SchemeMatching">
+                    <option value="inverted">Inverted</option>
+                    <option value="matching">Matching</option>
+                    <option value="generic">Generic</option>
+                </select>
+            </label>
+        </div>
+        <div v-if="!cfg.frozen && cfg.algorithm === 'musicKit'">
+            <label>
                 Key Color based on:
-                <select class="c-select" v-model="cfg.keyColor">
+                <select class="c-select" v-model="cfg.mkAlgo_keyColor">
                     <option value="bgColor">Background Color</option>
                     <option value="textColor1">Text Color 1</option>
                     <option value="textColor2">Text Color 2</option>
@@ -28,10 +41,10 @@ const cfg = useConfig();
                 </select>
             </label>
         </div>
-        <div v-if="!cfg.frozen">
+        <div v-if="!cfg.frozen && cfg.algorithm === 'musicKit'">
             <label>
                 Music Key Color based on:
-                <select class="c-select" v-model="cfg.musicKeyColor">
+                <select class="c-select" v-model="cfg.mkAlgo_musicKeyColor">
                     <option value="bgColor">Background Color</option>
                     <option value="textColor1">Text Color 1</option>
                     <option value="textColor2">Text Color 2</option>

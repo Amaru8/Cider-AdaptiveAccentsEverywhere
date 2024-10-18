@@ -72,10 +72,10 @@ export function waitForMusicKit(): Promise<void> {
 }
 
 export async function getColor(
-    type: 'keyColor' | 'musicKeyColor',
+    type: 'mkAlgo_keyColor' | 'mkAlgo_musicKeyColor',
     albumMediaItem: MusicKit.MediaItem
 ): Promise<string> {
-    if (useConfig().useInternalAlgorithm === false) {
+    if (useConfig().algorithm === 'musicKit') {
         // use colors provided by musickit
         return adjustColorForContrast(
             (albumMediaItem.attributes.artwork as any)[useConfig()[type]],
@@ -97,15 +97,27 @@ export async function getColor(
 
     switch (appearance) {
         case 'dark':
-            returnColor = useConfig().internalAlgoFlipScheme
-                ? palette.LightVibrant?.getHex()
-                : palette.DarkVibrant?.getHex();
+            if (useConfig().internal_SchemeMatching === 'generic') {
+                returnColor = palette.Vibrant?.getHex();
+                break;
+            }
+
+            returnColor =
+                useConfig().internal_SchemeMatching === 'inverted'
+                    ? palette.LightVibrant?.getHex()
+                    : palette.DarkVibrant?.getHex();
             break;
 
         case 'light':
-            returnColor = useConfig().internalAlgoFlipScheme
-                ? palette.DarkVibrant?.getHex()
-                : palette.LightVibrant?.getHex();
+            if (useConfig().internal_SchemeMatching === 'generic') {
+                returnColor = palette.Vibrant?.getHex();
+                break;
+            }
+
+            returnColor =
+                useConfig().internal_SchemeMatching === 'inverted'
+                    ? palette.DarkVibrant?.getHex()
+                    : palette.LightVibrant?.getHex();
             break;
 
         default:
