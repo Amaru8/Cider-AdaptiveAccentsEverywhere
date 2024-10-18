@@ -7,6 +7,12 @@ const cfg = useConfig();
 <template>
     <div class="q-px-lg plugin-base">
         <div>
+            <label>
+                <input type="checkbox" v-model="cfg.useInternalAlgorithm" /> Use Internal Algorithm instead of colors
+                from Apple
+            </label>
+        </div>
+        <div>
             <label> <input type="checkbox" v-model="cfg.frozen" /> Freeze Colors </label>
         </div>
         <div v-if="!cfg.frozen">

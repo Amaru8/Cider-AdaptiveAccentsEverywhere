@@ -1,13 +1,12 @@
 import { defineCustomElement } from 'vue';
 import type { App } from 'vue';
 import { createPinia } from 'pinia';
-import { definePluginContext, useCider } from '@ciderapp/pluginkit';
+import { definePluginContext } from '@ciderapp/pluginkit';
 import PluginSettings from './components/PluginSettings.vue';
 import PluginConfig from './plugin.config';
-import { getAlbumMediaItem, waitForMusicKit } from './utils';
+import { getAlbumMediaItem, getColor, waitForMusicKit } from './utils';
 
 const pinia = createPinia();
-const CiderApp = useCider();
 
 function configureApp(app: App) {
     app.use(pinia);
@@ -75,93 +74,15 @@ const { plugin, setupConfig, customElementName, goToPage, useCPlugin } = defineP
                         return;
                     }
 
-                    function getLuminance(hex: string): number {
-                        const rgb = parseInt(hex, 16);
-                        const r = (rgb >> 16) & 0xff;
-                        const g = (rgb >> 8) & 0xff;
-                        const b = (rgb >> 0) & 0xff;
-
-                        const rsRGB = r / 255;
-                        const gsRGB = g / 255;
-                        const bsRGB = b / 255;
-
-                        const R = rsRGB <= 0.03928 ? rsRGB / 12.92 : Math.pow((rsRGB + 0.055) / 1.055, 2.4);
-                        const G = gsRGB <= 0.03928 ? gsRGB / 12.92 : Math.pow((gsRGB + 0.055) / 1.055, 2.4);
-                        const B = bsRGB <= 0.03928 ? bsRGB / 12.92 : Math.pow((bsRGB + 0.055) / 1.055, 2.4);
-
-                        return 0.2126 * R + 0.7152 * G + 0.0722 * B;
-                    }
-
-                    function getContrastRatio(color1: string, color2: string): number {
-                        const l1 = getLuminance(color1);
-                        const l2 = getLuminance(color2);
-                        return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-                    }
-
-                    function adjustColorForContrast(
-                        color: string,
-                        backgroundColor: string,
-                        minContrast: number = 4.5
-                    ): string {
-                        let contrastRatio = getContrastRatio(color, backgroundColor);
-                        let attempts = 0;
-                        const maxAttempts = 50; // Prevent infinite loop
-
-                        while (contrastRatio < minContrast && attempts < maxAttempts) {
-                            const luminance = getLuminance(color);
-                            if (luminance > 0.5) {
-                                color = (parseInt(color, 16) - 0x111111).toString(16).padStart(6, '0');
-                            } else {
-                                color = (parseInt(color, 16) + 0x111111).toString(16).padStart(6, '0');
-                            }
-                            contrastRatio = getContrastRatio(color, backgroundColor);
-                            attempts++;
-                        }
-
-                        console.debug(`[Adaptive Accents Everywhere] Color adjustment attempts: ${attempts}`);
-                        return color;
-                    }
-
-                    function detectBackgroundColor(artworkAttribute: any): string {
-                        let appearance = CiderApp.config.cfg.value.visual.appearance;
-                        if (appearance === 'auto')
-                            appearance = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-
-                        switch (appearance) {
-                            case 'dark':
-                                if (CiderApp.config.cfg.value.visual.sweetener.useImmersiveBG === true)
-                                    return artworkAttribute.bgColor;
-                                return '000000';
-
-                            case 'light':
-                                return 'ffffff';
-
-                            default:
-                                break;
-                        }
-
-                        return '000000';
-                    }
-
                     try {
                         if (cfg.value.keyColor !== 'cider') {
-                            let keyColor: string = (albumMediaItem.attributes.artwork as any)[cfg.value.keyColor];
-                            keyColor = adjustColorForContrast(
-                                keyColor,
-                                detectBackgroundColor(albumMediaItem.attributes.artwork)
-                            );
+                            let keyColor: string = await getColor('keyColor', albumMediaItem);
                             console.debug('[Adaptive Accents Everywhere] Setting key color:', keyColor);
                             document.body.style.setProperty('--keyColor', '#' + keyColor);
                         }
 
                         if (cfg.value.musicKeyColor !== 'cider') {
-                            let musicKeyColor: string = (albumMediaItem.attributes.artwork as any)[
-                                cfg.value.musicKeyColor
-                            ];
-                            musicKeyColor = adjustColorForContrast(
-                                musicKeyColor,
-                                detectBackgroundColor(albumMediaItem.attributes.artwork)
-                            );
+                            let musicKeyColor: string = await getColor('musicKeyColor', albumMediaItem);
                             console.debug('[Adaptive Accents Everywhere] Setting music key color:', musicKeyColor);
                             document.documentElement.style.setProperty('--musicKeyColor', '#' + musicKeyColor);
                         }
@@ -180,6 +101,8 @@ export const cfg = setupConfig({
     frozen: false,
     keyColor: 'textColor1',
     musicKeyColor: 'textColor4',
+    useInternalAlgorithm: false,
+    internalAlgoFlipScheme: false,
 });
 
 export function useConfig() {

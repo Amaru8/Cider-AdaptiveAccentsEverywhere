@@ -1,4 +1,6 @@
 import { useCider } from '@ciderapp/pluginkit';
+import { useConfig } from './main';
+import Vibrant from 'node-vibrant';
 const CiderApp = useCider();
 
 const storefrontId = localStorage.getItem('appleMusic.storefront') ?? 'auto';
@@ -67,4 +69,115 @@ export function waitForMusicKit(): Promise<void> {
             }
         }, 100);
     });
+}
+
+export async function getColor(
+    type: 'keyColor' | 'musicKeyColor',
+    albumMediaItem: MusicKit.MediaItem
+): Promise<string> {
+    if (useConfig().useInternalAlgorithm === false) {
+        // use colors provided by musickit
+        return adjustColorForContrast(
+            (albumMediaItem.attributes.artwork as any)[useConfig()[type]],
+            detectBackgroundColor(albumMediaItem.attributes.artwork)
+        );
+    }
+
+    // internal algo
+    const artworkAttribute = albumMediaItem.attributes.artwork;
+    let appearance = CiderApp.config.cfg.value.visual.appearance;
+    if (appearance === 'auto')
+        appearance = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
+    let palette = await Vibrant.from(
+        resolveCoverUrl(artworkAttribute.url, artworkAttribute.width / 4, artworkAttribute.height / 4)
+    ).getPalette();
+
+    let returnColor: string | undefined;
+
+    switch (appearance) {
+        case 'dark':
+            returnColor = useConfig().internalAlgoFlipScheme
+                ? palette.LightVibrant?.getHex()
+                : palette.DarkVibrant?.getHex();
+            break;
+
+        case 'light':
+            returnColor = useConfig().internalAlgoFlipScheme
+                ? palette.DarkVibrant?.getHex()
+                : palette.LightVibrant?.getHex();
+            break;
+
+        default:
+            break;
+    }
+
+    return returnColor ? returnColor.replace('#', '') : (albumMediaItem.attributes.artwork as any)[useConfig()[type]];
+}
+
+function adjustColorForContrast(color: string, backgroundColor: string, minContrast: number = 4.5): string {
+    let contrastRatio = getContrastRatio(color, backgroundColor);
+    let attempts = 0;
+    const maxAttempts = 50; // Prevent infinite loop
+
+    while (contrastRatio < minContrast && attempts < maxAttempts) {
+        const luminance = getLuminance(color);
+        if (luminance > 0.5) {
+            color = (parseInt(color, 16) - 0x111111).toString(16).padStart(6, '0');
+        } else {
+            color = (parseInt(color, 16) + 0x111111).toString(16).padStart(6, '0');
+        }
+        contrastRatio = getContrastRatio(color, backgroundColor);
+        attempts++;
+    }
+
+    console.debug(`[Adaptive Accents Everywhere] Color adjustment attempts: ${attempts}`);
+    return color;
+}
+
+function getContrastRatio(color1: string, color2: string): number {
+    const l1 = getLuminance(color1);
+    const l2 = getLuminance(color2);
+    return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+
+function getLuminance(hex: string): number {
+    const rgb = parseInt(hex, 16);
+    const r = (rgb >> 16) & 0xff;
+    const g = (rgb >> 8) & 0xff;
+    const b = (rgb >> 0) & 0xff;
+
+    const rsRGB = r / 255;
+    const gsRGB = g / 255;
+    const bsRGB = b / 255;
+
+    const R = rsRGB <= 0.03928 ? rsRGB / 12.92 : Math.pow((rsRGB + 0.055) / 1.055, 2.4);
+    const G = gsRGB <= 0.03928 ? gsRGB / 12.92 : Math.pow((gsRGB + 0.055) / 1.055, 2.4);
+    const B = bsRGB <= 0.03928 ? bsRGB / 12.92 : Math.pow((bsRGB + 0.055) / 1.055, 2.4);
+
+    return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+}
+
+function detectBackgroundColor(artworkAttribute: any): string {
+    let appearance = CiderApp.config.cfg.value.visual.appearance;
+    if (appearance === 'auto')
+        appearance = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
+    switch (appearance) {
+        case 'dark':
+            if (CiderApp.config.cfg.value.visual.sweetener.useImmersiveBG === true) return artworkAttribute.bgColor;
+            return '000000';
+
+        case 'light':
+            return 'ffffff';
+
+        default:
+            break;
+    }
+
+    return '000000';
+}
+
+function resolveCoverUrl(url: string, width: number, height: number): string {
+    return url.replace('{w}', width.toString()).replace('{h}', height.toString()).replace('{f}', 'webp');
 }
