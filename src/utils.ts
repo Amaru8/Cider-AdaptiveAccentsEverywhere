@@ -85,7 +85,7 @@ export async function getColor(
 
     // internal algo
     const artworkAttribute = albumMediaItem.attributes.artwork;
-    let appearance = CiderApp.config.cfg.value.visual.appearance;
+    let appearance = getCiderConfig('visual.appearance');
     if (appearance === 'auto')
         appearance = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -171,13 +171,13 @@ function getLuminance(hex: string): number {
 }
 
 function detectBackgroundColor(artworkAttribute: any): string {
-    let appearance = CiderApp.config.cfg.value.visual.appearance;
+    let appearance = getCiderConfig('visual.appearance');
     if (appearance === 'auto')
         appearance = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
     switch (appearance) {
         case 'dark':
-            if (CiderApp.config.cfg.value.visual.sweetener.useImmersiveBG === true) return artworkAttribute.bgColor;
+            if (getCiderConfig('visual.sweetener.useImmersiveBG') === true) return artworkAttribute.bgColor;
             return '000000';
 
         case 'light':
@@ -191,5 +191,12 @@ function detectBackgroundColor(artworkAttribute: any): string {
 }
 
 function resolveCoverUrl(url: string, width: number, height: number): string {
-    return url.replace('{w}', Math.floor(width).toString()).replace('{h}', Math.floor(height).toString()).replace('{f}', 'webp');
+    return url
+        .replace('{w}', Math.floor(width).toString())
+        .replace('{h}', Math.floor(height).toString())
+        .replace('{f}', 'webp');
+}
+
+function getCiderConfig(location: string): unknown {
+    return CiderApp.config.getValue?.(location) ?? CiderApp.config.cfg.value[location];
 }

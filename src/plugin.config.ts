@@ -5,7 +5,7 @@ export default {
     identifier: 'cidr.amaru8.adaptiveaccentseverywhere',
     name: 'Adaptive Accents Everywhere',
     description: "Changes the accent color of the app based on the playing song's album cover.",
-    version: '1.0.0',
+    version: '1.1.2',
     author: 'amaru8',
     repo: 'https://github.com/Amaru8/Cider-AdaptiveAccentsEverywhere',
     entry: {
